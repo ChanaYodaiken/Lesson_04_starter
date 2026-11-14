@@ -28,6 +28,21 @@ def _media_ids_of(event: dict) -> set[str]:
         ids.update(gallery.get("media", []))
     return ids
 
+def for_duplicate_media(media_ids: list[str] ) -> bool:
+    """return true if there are duplicate imgs"""
+    # setMediaIds = set(event.get("media_ids", []))
+    setMediaIds = set(media_ids)
+    if len(setMediaIds) == len(media_ids):
+        return False;
+    return True;
+
+def media_from_another_event(event: dict, media_ids: list[str]) -> bool:
+    """return true if any media id is not in the event"""
+    setMediaIds = _media_ids_of(event)
+    for media_id in media_ids:
+        if media_id not in setMediaIds:
+            return True
+    return False
 
 def submit_selection(event: dict, actor_id: str, media_ids: list, service_codes: list) -> dict:
     """Validate a client's selection and record it on the event.
@@ -39,6 +54,11 @@ def submit_selection(event: dict, actor_id: str, media_ids: list, service_codes:
         raise SelectionError("FORBIDDEN")
     if not isinstance(media_ids, list) or len(media_ids) == 0:
         raise SelectionError("SELECTION_EMPTY")
+    if for_duplicate_media(media_ids):
+        raise SelectionError("DUPLICATE_MEDIA")
+    if media_from_another_event(event, media_ids):
+        raise SelectionError("MEDIA_NOT_IN_EVENT")
+
     enabled = available_services(event)
     for code in service_codes:
         if code not in enabled:
